@@ -11,15 +11,14 @@ import {
   User
 } from 'firebase/auth';
 
-// NOTE: These are placeholder values. In a production app, these should be 
-// replaced with actual Firebase configuration from the Firebase Console.
+// Firebase configuration for EcoTracker project (Hosting + Auth)
 const firebaseConfig = {
-  apiKey: "AIzaSy_FAKE_KEY_FOR_DEMO",
-  authDomain: "ecotracker-demo.firebaseapp.com",
-  projectId: "ecotracker-demo",
-  storageBucket: "ecotracker-demo.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  apiKey: "AIzaSyAJaUuXNY4oi3bW6pPOi0YlkTengFkdBQM",
+  authDomain: "ecotracker-12f5f.firebaseapp.com",
+  projectId: "ecotracker-12f5f",
+  storageBucket: "ecotracker-12f5f.firebasestorage.app",
+  messagingSenderId: "959154506986",
+  appId: "1:959154506986:web:f85e2de96052143ca01b93"
 };
 
 const app = initializeApp(firebaseConfig);
