@@ -1,0 +1,7 @@
+{
+  "name": "EcoTracker",
+  "description": "A gamified carbon footprint tracker for students to monitor daily emissions from transport and food choices, with AI-powered green tips.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
