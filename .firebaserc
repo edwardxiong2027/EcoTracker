@@ -1,5 +1,14 @@
 {
   "projects": {
-    "default": "ecotracker-12f5f"
+    "default": "mindmap-9f454"
+  },
+  "targets": {
+    "mindmap-9f454": {
+      "hosting": {
+        "ecotracker": [
+          "ecotracker-20251224"
+        ]
+      }
+    }
   }
 }

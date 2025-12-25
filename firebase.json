@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "ecotracker-20251224",
     "public": "dist",
     "ignore": [
       "firebase.json",

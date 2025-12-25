@@ -11,14 +11,15 @@ import {
   User
 } from 'firebase/auth';
 
-// Firebase configuration for EcoTracker project (Hosting + Auth)
+// Firebase configuration for the project (Hosting under mindmap-9f454 project)
+// Hosted at: ecotracker-20251224.web.app
 const firebaseConfig = {
-  apiKey: "AIzaSyAJaUuXNY4oi3bW6pPOi0YlkTengFkdBQM",
-  authDomain: "ecotracker-12f5f.firebaseapp.com",
-  projectId: "ecotracker-12f5f",
-  storageBucket: "ecotracker-12f5f.firebasestorage.app",
-  messagingSenderId: "959154506986",
-  appId: "1:959154506986:web:f85e2de96052143ca01b93"
+  apiKey: "AIzaSyCXEtq0ubgtXIbb7s_JzoWt8daNejKwuLQ",
+  authDomain: "ecotracker-20251224.web.app",
+  projectId: "mindmap-9f454",
+  storageBucket: "mindmap-9f454.firebasestorage.app",
+  messagingSenderId: "582191293462",
+  appId: "1:582191293462:web:bf853df01d39f9a4538137"
 };
 
 const app = initializeApp(firebaseConfig);
