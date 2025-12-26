@@ -14,12 +14,12 @@ import {
 // Firebase configuration for the project (Hosting under mindmap-9f454 project)
 // Hosted at: ecotracker-20251224.web.app
 const firebaseConfig = {
-  apiKey: "AIzaSyCXEtq0ubgtXIbb7s_JzoWt8daNejKwuLQ",
-  authDomain: "ecotracker-20251224.web.app",
-  projectId: "mindmap-9f454",
-  storageBucket: "mindmap-9f454.firebasestorage.app",
-  messagingSenderId: "582191293462",
-  appId: "1:582191293462:web:bf853df01d39f9a4538137"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
