@@ -40,7 +40,7 @@ const Leaderboard: React.FC<Props> = ({ currentUserId }) => {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-4">
+    <div className="animate-in fade-in duration-500 space-y-4 max-w-4xl mx-auto">
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-1">Campus Ranks</h2>

@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -10,10 +11,17 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  where,
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { EcoLog, LeaderboardEntry, UserProfile } from './types';
+import { 
+  ChallengeConfig,
+  EcoLog, 
+  LeaderboardEntry, 
+  UserChallenge, 
+  UserProfile 
+} from './types';
 
 const USERS_COLLECTION = 'users';
 
@@ -142,6 +150,9 @@ export const subscribeToUserLogs = (
         date: data.date,
         transport: data.transport || { type: data.transportType, distanceKm: data.distanceKm || 0 },
         food: data.food,
+        homeEnergyKwh: data.homeEnergyKwh,
+        wasteKg: data.wasteKg,
+        waterLiters: data.waterLiters,
         carbonScore: Number(data.carbonScore || 0),
       };
     });
@@ -174,4 +185,154 @@ export const subscribeToLeaderboard = (
     });
     onChange(leaders);
   });
+};
+
+export const subscribeToUserChallenges = (
+  uid: string,
+  onChange: (challenges: UserChallenge[]) => void
+): Unsubscribe => {
+  const q = query(
+    collection(db, USERS_COLLECTION, uid, 'challenges'),
+    orderBy('status', 'asc')
+  );
+  return onSnapshot(q, (snap) => {
+    const items: UserChallenge[] = snap.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        title: data.title,
+        description: data.description,
+        reward: data.reward,
+        target: data.target,
+        progress: data.progress || 0,
+        status: data.status,
+        metric: data.metric,
+        transportType: data.transportType,
+        foodTypes: data.foodTypes,
+        icon: data.icon,
+        completedAt: data.completedAt || null,
+      };
+    });
+    onChange(items);
+  });
+};
+
+export const joinChallenge = async (user: User, challenge: ChallengeConfig) => {
+  const ref = doc(db, USERS_COLLECTION, user.uid, 'challenges', challenge.id);
+  await setDoc(ref, {
+    id: challenge.id,
+    title: challenge.title,
+    description: challenge.description,
+    reward: challenge.reward,
+    target: challenge.target,
+    progress: 0,
+    status: 'active',
+    metric: challenge.metric,
+    transportType: challenge.transportType || null,
+    foodTypes: challenge.foodTypes || [],
+    icon: challenge.icon,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+};
+
+export const completeChallenge = async (user: User, challenge: UserChallenge) => {
+  if (challenge.status === 'completed') return;
+  const userRef = doc(db, USERS_COLLECTION, user.uid);
+  const challengeRef = doc(db, USERS_COLLECTION, user.uid, 'challenges', challenge.id);
+
+  await runTransaction(db, async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    const userData = (userSnap.data() as Partial<UserProfile>) || {};
+    const newPoints = (userData.totalPoints || 0) + (challenge.reward || 0);
+
+    transaction.set(challengeRef, {
+      ...challenge,
+      status: 'completed',
+      completedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
+    transaction.set(userRef, {
+      totalPoints: newPoints,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  });
+};
+
+export const incrementChallengeProgress = async (user: User, challengeId: string, amount: number) => {
+  const userRef = doc(db, USERS_COLLECTION, user.uid);
+  const challengeRef = doc(db, USERS_COLLECTION, user.uid, 'challenges', challengeId);
+
+  await runTransaction(db, async (transaction) => {
+    const challengeSnap = await transaction.get(challengeRef);
+    if (!challengeSnap.exists()) return;
+    const challengeData = challengeSnap.data() as UserChallenge;
+
+    const previousStatus = challengeData.status;
+    const target = challengeData.target || 1;
+    const progress = (challengeData.progress || 0) + amount;
+    const status = progress >= target ? 'completed' : 'active';
+
+    transaction.set(challengeRef, {
+      progress,
+      status,
+      updatedAt: serverTimestamp(),
+      completedAt: status === 'completed' ? serverTimestamp() : challengeData.completedAt || null,
+    }, { merge: true });
+
+    if (status === 'completed' && previousStatus !== 'completed') {
+      const userSnap = await transaction.get(userRef);
+      const userData = (userSnap.data() as Partial<UserProfile>) || {};
+      const newPoints = (userData.totalPoints || 0) + (challengeData.reward || 0);
+      transaction.set(userRef, { totalPoints: newPoints, updatedAt: serverTimestamp() }, { merge: true });
+    }
+  });
+};
+
+export const updateChallengesFromLog = async (user: User, log: EcoLog) => {
+  const activeSnap = await getDocs(
+    query(
+      collection(db, USERS_COLLECTION, user.uid, 'challenges'),
+      where('status', '==', 'active')
+    )
+  );
+
+  if (activeSnap.empty) return;
+
+  const updates: Promise<void>[] = [];
+
+  activeSnap.forEach((docSnap) => {
+    const challenge = docSnap.data() as UserChallenge;
+    let amount = 0;
+
+    switch (challenge.metric) {
+      case 'logs':
+        amount = 1;
+        break;
+      case 'transport':
+        if (challenge.transportType && log.transport?.type === challenge.transportType) {
+          amount = 1;
+        }
+        break;
+      case 'food':
+        if (challenge.foodTypes?.includes(log.food)) {
+          amount = 1;
+        }
+        break;
+      case 'water':
+        amount = log.waterLiters || 0;
+        break;
+      default:
+        break;
+    }
+
+    if (amount > 0) {
+      updates.push(incrementChallengeProgress(user, challenge.id, amount));
+    }
+  });
+
+  if (updates.length) {
+    await Promise.all(updates);
+  }
 };

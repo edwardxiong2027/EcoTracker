@@ -19,7 +19,7 @@ const Profile: React.FC<Props> = ({ user, profile, onSignOut }) => {
   const streak = profile?.streak || 0;
 
   return (
-    <div className="animate-in slide-in-from-right-4 duration-300">
+    <div className="max-w-3xl mx-auto animate-in slide-in-from-right-4 duration-300 space-y-6">
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 text-center">
         <div className="relative inline-block mb-4">
           <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center text-4xl border-4 border-white shadow-md">

@@ -5,13 +5,20 @@ import { User } from '../firebase';
 interface Props {
   user: User;
   level: number;
+  activeTab: 'home' | 'track' | 'rank' | 'profile';
   onTabChange: (tab: any) => void;
   onSignOut: () => void;
 }
 
-const Header: React.FC<Props> = ({ user, level, onTabChange, onSignOut }) => {
+const Header: React.FC<Props> = ({ user, level, activeTab, onTabChange, onSignOut }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tabs = [
+    { id: 'home', label: 'Home' },
+    { id: 'track', label: 'Log' },
+    { id: 'rank', label: 'Ranks' },
+    { id: 'profile', label: 'Profile' },
+  ];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,6 +78,20 @@ const Header: React.FC<Props> = ({ user, level, onTabChange, onSignOut }) => {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="hidden md:flex items-center gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`px-3 py-2 rounded-xl text-sm font-bold transition ${
+              activeTab === tab.id ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:bg-slate-100'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2">

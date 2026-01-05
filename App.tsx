@@ -6,12 +6,16 @@ import {
   User, 
   signOut 
 } from './firebase';
-import { EcoLog, UserProfile } from './types';
+import { EcoLog, UserProfile, UserChallenge, ChallengeConfig } from './types';
 import { 
   addEcoLog, 
   ensureUserProfile, 
   subscribeToUserLogs, 
-  subscribeToUserProfile 
+  subscribeToUserProfile,
+  subscribeToUserChallenges,
+  joinChallenge,
+  completeChallenge,
+  updateChallengesFromLog,
 } from './dataService';
 import { Unsubscribe } from 'firebase/firestore';
 import Login from './components/Login';
@@ -22,7 +26,6 @@ import Profile from './components/Profile';
 import Navigation from './components/Navigation';
 import Landing from './components/Landing';
 import Header from './components/Header';
-import Footer from './components/Footer';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -31,14 +34,18 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'track' | 'rank' | 'profile'>('home');
   const [logs, setLogs] = useState<EcoLog[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [challenges, setChallenges] = useState<UserChallenge[]>([]);
   const logUnsubscribe = useRef<Unsubscribe | null>(null);
   const profileUnsubscribe = useRef<Unsubscribe | null>(null);
+  const challengeUnsubscribe = useRef<Unsubscribe | null>(null);
 
   const cleanupSubscriptions = () => {
     logUnsubscribe.current?.();
     profileUnsubscribe.current?.();
+    challengeUnsubscribe.current?.();
     logUnsubscribe.current = null;
     profileUnsubscribe.current = null;
+    challengeUnsubscribe.current = null;
   };
 
   useEffect(() => {
@@ -51,9 +58,11 @@ const App: React.FC = () => {
         void ensureUserProfile(currentUser);
         logUnsubscribe.current = subscribeToUserLogs(currentUser.uid, setLogs);
         profileUnsubscribe.current = subscribeToUserProfile(currentUser.uid, setProfile);
+        challengeUnsubscribe.current = subscribeToUserChallenges(currentUser.uid, setChallenges);
       } else {
         setLogs([]);
         setProfile(null);
+        setChallenges([]);
       }
     });
 
@@ -66,7 +75,18 @@ const App: React.FC = () => {
   const handleAddLog = async (newLog: EcoLog) => {
     if (!user) return;
     await addEcoLog(user, newLog);
+    await updateChallengesFromLog(user, newLog);
     setActiveTab('home');
+  };
+
+  const handleJoinChallenge = async (challenge: ChallengeConfig) => {
+    if (!user) return;
+    await joinChallenge(user, challenge);
+  };
+
+  const handleCompleteChallenge = async (challenge: UserChallenge) => {
+    if (!user) return;
+    await completeChallenge(user, challenge);
   };
 
   if (loading) {
@@ -100,28 +120,39 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 relative flex flex-col font-inter">
-      <div className="w-full max-w-md mx-auto flex-1 bg-white shadow-2xl relative flex flex-col min-h-screen">
-        <Header 
-          user={user} 
-          level={userLevel} 
-          onTabChange={setActiveTab} 
-          onSignOut={() => signOut(auth)} 
-        />
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col md:flex-row gap-6 p-4 md:p-8">
+        <div className="flex-1 bg-white shadow-2xl rounded-3xl relative flex flex-col min-h-[80vh]">
+          <Header 
+            user={user} 
+            level={userLevel} 
+            activeTab={activeTab}
+            onTabChange={setActiveTab} 
+            onSignOut={() => signOut(auth)} 
+          />
 
-        <main className="p-4 pb-24 overflow-y-auto flex-1">
-          {activeTab === 'home' && <Dashboard logs={logs} profile={profile} />}
-          {activeTab === 'track' && <Track onAddLog={handleAddLog} />}
-          {activeTab === 'rank' && <Leaderboard currentUserId={user?.uid} />}
-          {activeTab === 'profile' && (
-            <Profile 
-              user={user} 
-              profile={profile}
-              onSignOut={() => signOut(auth)} 
-            />
-          )}
-        </main>
+          <main className="p-4 md:p-8 pb-24 overflow-y-auto flex-1">
+            {activeTab === 'home' && (
+              <Dashboard 
+                logs={logs} 
+                profile={profile} 
+                challenges={challenges}
+                onJoinChallenge={handleJoinChallenge}
+                onCompleteChallenge={handleCompleteChallenge}
+              />
+            )}
+            {activeTab === 'track' && <Track onAddLog={handleAddLog} />}
+            {activeTab === 'rank' && <Leaderboard currentUserId={user?.uid} />}
+            {activeTab === 'profile' && (
+              <Profile 
+                user={user} 
+                profile={profile}
+                onSignOut={() => signOut(auth)} 
+              />
+            )}
+          </main>
 
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
       </div>
       
       {/* Full width footer for the "App" container if desired, 
