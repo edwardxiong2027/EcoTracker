@@ -1,16 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { EcoLog, EcoAdvice } from '../types';
+import { EcoLog, EcoAdvice, UserProfile } from '../types';
 import { getDailyEcoAdvice } from '../geminiService';
 
 interface Props {
   logs: EcoLog[];
+  profile: UserProfile | null;
 }
 
-const Dashboard: React.FC<Props> = ({ logs }) => {
+const Dashboard: React.FC<Props> = ({ logs, profile }) => {
   const [advice, setAdvice] = useState<EcoAdvice | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(false);
 
@@ -23,10 +24,12 @@ const Dashboard: React.FC<Props> = ({ logs }) => {
     }
   }, [logs.length]);
 
-  const totalCarbon = logs.reduce((sum, log) => sum + log.carbonScore, 0).toFixed(1);
-  const avgCarbon = logs.length > 0 ? (Number(totalCarbon) / logs.length).toFixed(1) : 0;
+  const totalCarbonValue = profile?.totalCarbon ?? logs.reduce((sum, log) => sum + log.carbonScore, 0);
+  const totalLogs = profile?.totalLogs ?? logs.length;
+  const totalCarbon = totalCarbonValue.toFixed(1);
+  const avgCarbon = totalLogs > 0 ? (totalCarbonValue / totalLogs).toFixed(1) : 0;
 
-  const chartData = logs.slice(-7).map(log => ({
+  const chartData = logs.slice(0, 7).reverse().map(log => ({
     date: new Date(log.date).toLocaleDateString(undefined, { weekday: 'short' }),
     carbon: log.carbonScore
   }));
@@ -34,7 +37,7 @@ const Dashboard: React.FC<Props> = ({ logs }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Carbon Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total CO2e</p>
           <div className="flex items-baseline gap-1 mt-1">
@@ -47,6 +50,17 @@ const Dashboard: React.FC<Props> = ({ logs }) => {
           <div className="flex items-baseline gap-1 mt-1">
             <h3 className="text-2xl font-bold text-gray-800">{avgCarbon}</h3>
             <span className="text-gray-400 text-sm">kg</span>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Daily Streak</p>
+          <div className="flex items-center gap-2 mt-1">
+            <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-1">
+              {profile?.streak || 0} <span className="text-lg">🔥</span>
+            </h3>
+            <span className="text-xs bg-orange-50 text-orange-600 font-bold px-2 py-1 rounded-full">
+              {profile?.totalPoints ? `${Math.round(profile.totalPoints / 50)} bonus XP` : '+25 XP/day'}
+            </span>
           </div>
         </div>
       </div>

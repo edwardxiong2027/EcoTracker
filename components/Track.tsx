@@ -4,7 +4,7 @@ import { TransportType, FoodType, EcoLog } from '../types';
 import { TRANSPORT_FACTORS, FOOD_FACTORS } from '../constants.tsx';
 
 interface Props {
-  onAddLog: (log: EcoLog) => void;
+  onAddLog: (log: EcoLog) => Promise<void>;
 }
 
 const Track: React.FC<Props> = ({ onAddLog }) => {
@@ -12,10 +12,12 @@ const Track: React.FC<Props> = ({ onAddLog }) => {
   const [distance, setDistance] = useState<number>(0);
   const [food, setFood] = useState<FoodType>(FoodType.VEGAN);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     const transportCarbon = distance * TRANSPORT_FACTORS[transport];
     const foodCarbon = FOOD_FACTORS[food];
@@ -29,10 +31,13 @@ const Track: React.FC<Props> = ({ onAddLog }) => {
       carbonScore: totalCarbon
     };
 
-    setTimeout(() => {
-      onAddLog(newLog);
+    try {
+      await onAddLog(newLog);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save your log right now.');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -40,6 +45,11 @@ const Track: React.FC<Props> = ({ onAddLog }) => {
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6">
         <h2 className="text-xl font-bold text-gray-800 mb-2">Log Daily Action</h2>
         <p className="text-gray-500 text-sm mb-6">Track your commute and food today to earn points.</p>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Transport Section */}

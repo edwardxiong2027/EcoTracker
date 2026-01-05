@@ -1,12 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   auth, 
   onAuthStateChanged, 
   User, 
   signOut 
 } from './firebase';
-import { EcoLog } from './types';
+import { EcoLog, UserProfile } from './types';
+import { 
+  addEcoLog, 
+  ensureUserProfile, 
+  subscribeToUserLogs, 
+  subscribeToUserProfile 
+} from './dataService';
+import { Unsubscribe } from 'firebase/firestore';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Track from './components/Track';
@@ -23,25 +30,42 @@ const App: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'track' | 'rank' | 'profile'>('home');
   const [logs, setLogs] = useState<EcoLog[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const logUnsubscribe = useRef<Unsubscribe | null>(null);
+  const profileUnsubscribe = useRef<Unsubscribe | null>(null);
+
+  const cleanupSubscriptions = () => {
+    logUnsubscribe.current?.();
+    profileUnsubscribe.current?.();
+    logUnsubscribe.current = null;
+    profileUnsubscribe.current = null;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      cleanupSubscriptions();
+
+      if (currentUser) {
+        void ensureUserProfile(currentUser);
+        logUnsubscribe.current = subscribeToUserLogs(currentUser.uid, setLogs);
+        profileUnsubscribe.current = subscribeToUserProfile(currentUser.uid, setProfile);
+      } else {
+        setLogs([]);
+        setProfile(null);
+      }
     });
 
-    const savedLogs = localStorage.getItem('eco_logs');
-    if (savedLogs) {
-      setLogs(JSON.parse(savedLogs));
-    }
-
-    return () => unsubscribe();
+    return () => {
+      cleanupSubscriptions();
+      unsubscribe();
+    };
   }, []);
 
-  const handleAddLog = (newLog: EcoLog) => {
-    const updatedLogs = [...logs, newLog];
-    setLogs(updatedLogs);
-    localStorage.setItem('eco_logs', JSON.stringify(updatedLogs));
+  const handleAddLog = async (newLog: EcoLog) => {
+    if (!user) return;
+    await addEcoLog(user, newLog);
     setActiveTab('home');
   };
 
@@ -71,7 +95,8 @@ const App: React.FC = () => {
     return <Landing onStart={() => setShowLogin(true)} />;
   }
 
-  const userLevel = Math.floor(logs.length / 5) + 1;
+  const totalLogs = profile?.totalLogs || logs.length;
+  const userLevel = Math.floor(totalLogs / 5) + 1;
 
   return (
     <div className="min-h-screen bg-slate-50 relative flex flex-col font-inter">
@@ -84,13 +109,13 @@ const App: React.FC = () => {
         />
 
         <main className="p-4 pb-24 overflow-y-auto flex-1">
-          {activeTab === 'home' && <Dashboard logs={logs} />}
+          {activeTab === 'home' && <Dashboard logs={logs} profile={profile} />}
           {activeTab === 'track' && <Track onAddLog={handleAddLog} />}
-          {activeTab === 'rank' && <Leaderboard />}
+          {activeTab === 'rank' && <Leaderboard currentUserId={user?.uid} />}
           {activeTab === 'profile' && (
             <Profile 
               user={user} 
-              logsCount={logs.length} 
+              profile={profile}
               onSignOut={() => signOut(auth)} 
             />
           )}

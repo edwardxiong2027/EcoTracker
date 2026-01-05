@@ -10,6 +10,7 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration for the project (Hosting under mindmap-9f454 project)
 // Hosted at: ecotracker-20251224.web.app
@@ -24,10 +25,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 export { 
   auth, 
+  db,
   googleProvider, 
   signInWithPopup, 
   signInWithEmailAndPassword, 

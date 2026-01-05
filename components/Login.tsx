@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { 
+  auth,
   googleProvider, 
   signInWithPopup, 
   signInWithEmailAndPassword, 
@@ -12,26 +13,33 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(null as any, email, password); // Firebase setup handles this
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(null as any, email, password);
+        await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
-      setError('Check your credentials or connection.');
+      setError(err?.message || 'Check your credentials or connection.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(null as any, googleProvider);
-    } catch (err) {
-      setError('Google Sign-in failed.');
+      setLoading(true);
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      setError(err?.message || 'Google Sign-in failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,6 +84,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-green-200"
+            disabled={loading}
           >
             {isLogin ? 'Sign In' : 'Create Account'}
           </button>
@@ -89,7 +98,8 @@ const Login: React.FC = () => {
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full mt-4 flex items-center justify-center gap-3 bg-white border border-gray-200 py-3 rounded-2xl hover:bg-gray-50 transition-all font-medium text-gray-700"
+            disabled={loading}
+            className="w-full mt-4 flex items-center justify-center gap-3 bg-white border border-gray-200 py-3 rounded-2xl hover:bg-gray-50 transition-all font-medium text-gray-700 disabled:opacity-60"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
             Sign in with Google

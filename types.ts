@@ -32,9 +32,11 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   totalPoints: number;
-  level: number;
+  totalCarbon: number;
+  totalLogs: number;
   streak: number;
-  badges: Badge[];
+  lastLogDate: string | null;
+  badges?: Badge[];
 }
 
 export interface Badge {
@@ -48,4 +50,15 @@ export interface EcoAdvice {
   tip: string;
   impactScore: number;
   analysis: string;
+}
+
+export interface LeaderboardEntry {
+  uid: string;
+  displayName: string;
+  photoURL: string;
+  totalPoints: number;
+  totalCarbon: number;
+  totalLogs: number;
+  streak: number;
+  rank: number;
 }
